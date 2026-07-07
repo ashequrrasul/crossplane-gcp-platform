@@ -17,8 +17,7 @@ spec:
 
     networkingMode: VPC_NATIVE
 
-    ipAllocationPolicy:
-      - {}
+    ipAllocationPolicy: {}
 
   providerConfigRef:
     name: default
