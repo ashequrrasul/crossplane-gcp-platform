@@ -18,16 +18,10 @@ spec:
     networkingMode: VPC_NATIVE
 
     ipAllocationPolicy:
-      - clusterSecondaryRangeName: pods-range
-        servicesSecondaryRangeName: services-range
-
-    workloadIdentityConfig:
-      - workloadPool: project-40d105bf-bb2b-4bf6-b9f.svc.id.goog
-
-    privateClusterConfig:
-      - enablePrivateNodes: true
-        enablePrivateEndpoint: false
-        masterIpv4CidrBlock: 172.16.0.0/28
+      - clusterSecondaryRangeNameRef:
+          name: pods-range
+        servicesSecondaryRangeNameRef:
+          name: services-range
 
   providerConfigRef:
     name: default
