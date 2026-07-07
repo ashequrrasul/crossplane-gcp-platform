@@ -1,0 +1,24 @@
+apiVersion: container.gcp.upbound.io/v1beta2
+kind: NodePool
+metadata:
+  name: crossplane-dev-nodepool
+spec:
+  forProvider:
+    clusterRef:
+      name: crossplane-dev-gke
+    location: us-east1-c
+    nodeCount: 1
+
+    nodeConfig:
+      machineType: e2-medium
+      diskSizeGb: 20
+      diskType: pd-standard
+      oauthScopes:
+        - https://www.googleapis.com/auth/cloud-platform
+
+    management:
+      autoRepair: true
+      autoUpgrade: true
+
+  providerConfigRef:
+    name: default
