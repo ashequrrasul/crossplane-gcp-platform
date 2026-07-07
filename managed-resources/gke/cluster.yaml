@@ -1,0 +1,33 @@
+apiVersion: container.gcp.upbound.io/v1beta2
+kind: Cluster
+metadata:
+  name: crossplane-dev-gke
+spec:
+  forProvider:
+    location: us-east1
+
+    networkRef:
+      name: crossplane-vpc
+
+    subnetworkRef:
+      name: crossplane-subnet-us-east1
+
+    removeDefaultNodePool: true
+    initialNodeCount: 1
+
+    networkingMode: VPC_NATIVE
+
+    ipAllocationPolicy:
+      - clusterSecondaryRangeName: pods-range
+        servicesSecondaryRangeName: services-range
+
+    workloadIdentityConfig:
+      - workloadPool: project-40d105bf-bb2b-4bf6-b9f.svc.id.goog
+
+    privateClusterConfig:
+      - enablePrivateNodes: true
+        enablePrivateEndpoint: false
+        masterIpv4CidrBlock: 172.16.0.0/28
+
+  providerConfigRef:
+    name: default

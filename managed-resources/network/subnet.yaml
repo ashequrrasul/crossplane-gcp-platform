@@ -8,5 +8,10 @@ spec:
     ipCidrRange: 10.0.1.0/24
     networkRef:
       name: crossplane-vpc
+    secondaryIpRange:
+      - rangeName: pods-range
+        ipCidrRange: 10.1.0.0/16
+      - rangeName: services-range
+        ipCidrRange: 10.2.0.0/20
   providerConfigRef:
     name: default
