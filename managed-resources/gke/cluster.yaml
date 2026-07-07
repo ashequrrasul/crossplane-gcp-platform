@@ -18,10 +18,7 @@ spec:
     networkingMode: VPC_NATIVE
 
     ipAllocationPolicy:
-      - clusterSecondaryRangeNameRef:
-          name: pods-range
-        servicesSecondaryRangeNameRef:
-          name: services-range
+      - {}
 
   providerConfigRef:
     name: default
