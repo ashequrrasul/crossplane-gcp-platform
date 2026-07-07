@@ -1,0 +1,15 @@
+apiVersion: sql.gcp.upbound.io/v1beta2
+kind: User
+metadata:
+  name: crossplane-dbuser
+spec:
+  forProvider:
+    instanceRef:
+      name: crossplane-postgres
+    name: appuser
+    passwordSecretRef:
+      namespace: crossplane-system
+      name: cloudsql-appuser-secret
+      key: password
+  providerConfigRef:
+    name: default

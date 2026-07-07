@@ -1,0 +1,13 @@
+apiVersion: servicenetworking.gcp.upbound.io/v1beta1
+kind: Connection
+metadata:
+  name: crossplane-private-service-connection
+spec:
+  forProvider:
+    networkRef:
+      name: crossplane-vpc
+    service: servicenetworking.googleapis.com
+    reservedPeeringRanges:
+      - crossplane-private-services
+  providerConfigRef:
+    name: default

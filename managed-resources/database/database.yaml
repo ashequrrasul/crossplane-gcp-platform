@@ -1,0 +1,12 @@
+apiVersion: sql.gcp.upbound.io/v1beta1
+kind: Database
+metadata:
+  name: crossplane-appdb
+  annotations:
+    crossplane.io/external-name: appdb
+spec:
+  forProvider:
+    instanceRef:
+      name: crossplane-postgres
+  providerConfigRef:
+    name: default

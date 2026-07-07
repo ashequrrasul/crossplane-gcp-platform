@@ -1,0 +1,11 @@
+apiVersion: pkg.crossplane.io/v1beta1
+kind: DeploymentRuntimeConfig
+metadata:
+  name: provider-gcp-runtime
+spec:
+  serviceAccountTemplate:
+    metadata:
+      name: provider-gcp
+      annotations:
+        iam.gke.io/gcp-service-account: provider-gcp@project-40d105bf-bb2b-4bf6-b9f.iam.gserviceaccount.com
+        

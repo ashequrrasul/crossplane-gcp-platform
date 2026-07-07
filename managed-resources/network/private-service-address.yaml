@@ -1,0 +1,14 @@
+apiVersion: compute.gcp.upbound.io/v1beta1
+kind: GlobalAddress
+metadata:
+  name: crossplane-private-services
+spec:
+  forProvider:
+    purpose: VPC_PEERING
+    addressType: INTERNAL
+    address: 10.3.0.0/16
+    prefixLength: 16
+    networkRef:
+      name: crossplane-vpc
+  providerConfigRef:
+    name: default

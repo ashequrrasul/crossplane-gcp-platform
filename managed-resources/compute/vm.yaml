@@ -1,0 +1,40 @@
+apiVersion: compute.gcp.upbound.io/v1beta1
+kind: Instance
+metadata:
+  name: crossplane-web-vm
+spec:
+  forProvider:
+    zone: us-east1-c
+    machineType: e2-medium
+    tags:
+      - web
+      - ssh
+
+    bootDisk:
+      - initializeParams:
+          - image: debian-cloud/debian-12
+
+    networkInterface:
+      - subnetworkRef:
+          name: crossplane-subnet-us-east1
+        accessConfig:
+          - {}
+
+    metadataStartupScript: |
+      #!/bin/bash
+      apt-get update -y
+      apt-get install -y apache2
+      systemctl enable apache2
+      systemctl start apache2
+      cat <<EOF > /var/www/html/index.html
+      <html>
+        <head><title>Crossplane VM</title></head>
+        <body>
+          <h1>Hello from Crossplane 🚀</h1>
+          <p>This VM was created by Crossplane on GCP.</p>
+        </body>
+      </html>
+      EOF
+
+  providerConfigRef:
+    name: default

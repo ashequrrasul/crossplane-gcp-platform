@@ -1,0 +1,12 @@
+apiVersion: compute.gcp.upbound.io/v1beta1
+kind: Subnetwork
+metadata:
+  name: crossplane-subnet-us-east1
+spec:
+  forProvider:
+    region: us-east1
+    ipCidrRange: 10.0.1.0/24
+    networkRef:
+      name: crossplane-vpc
+  providerConfigRef:
+    name: default

@@ -1,0 +1,20 @@
+apiVersion: compute.gcp.upbound.io/v1beta1
+kind: Firewall
+metadata:
+  name: crossplane-allow-ssh
+spec:
+  forProvider:
+    networkRef:
+      name: crossplane-vpc
+    direction: INGRESS
+    sourceRanges:
+      - 100.33.165.118/32
+      - 35.235.240.0/20
+    targetTags:
+      - ssh
+    allow:
+      - protocol: tcp
+        ports:
+          - "22"
+  providerConfigRef:
+    name: default

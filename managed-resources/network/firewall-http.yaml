@@ -1,0 +1,17 @@
+apiVersion: compute.gcp.upbound.io/v1beta1
+kind: Firewall
+metadata:
+  name: crossplane-allow-http
+spec:
+  forProvider:
+    networkRef:
+      name: crossplane-vpc
+    direction: INGRESS
+    sourceRanges:
+      - 0.0.0.0/0
+    allow:
+      - protocol: tcp
+        ports:
+          - "80"
+  providerConfigRef:
+    name: default
