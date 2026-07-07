@@ -4,8 +4,8 @@ metadata:
   name: crossplane-dev-gke
 spec:
   forProvider:
-    location: us-east1
-
+    location: us-east1-c
+    deletionProtection: false
     networkRef:
       name: crossplane-vpc
 
@@ -17,7 +17,9 @@ spec:
 
     networkingMode: VPC_NATIVE
 
-    ipAllocationPolicy: {}
+    ipAllocationPolicy:
+      clusterSecondaryRangeName: pods-range
+      servicesSecondaryRangeName: services-range
 
   providerConfigRef:
     name: default
