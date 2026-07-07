@@ -20,6 +20,8 @@ spec:
     ipAllocationPolicy:
       clusterSecondaryRangeName: pods-range
       servicesSecondaryRangeName: services-range
+    workloadIdentityConfig:
+      workloadPool: project-40d105bf-bb2b-4bf6-b9f.svc.id.goog
 
   providerConfigRef:
     name: default
