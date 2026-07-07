@@ -4,3 +4,5 @@ metadata:
   name: provider-gcp-container
 spec:
   package: xpkg.upbound.io/upbound/provider-gcp-container:v1.12.0
+  runtimeConfigRef:
+    name: provider-gcp-runtime
