@@ -3,6 +3,7 @@ kind: Provider
 metadata:
   name: provider-gcp-servicenetworking
 spec:
-  package: xpkg.upbound.io/upbound/provider-gcp-servicenetworking:v1.8.0
+  #package: xpkg.upbound.io/upbound/provider-gcp-servicenetworking:v1.8.0
+  package: xpkg.upbound.io/upbound/provider-gcp-servicenetworking:v2.6.0
   runtimeConfigRef:
     name: provider-gcp-runtime
