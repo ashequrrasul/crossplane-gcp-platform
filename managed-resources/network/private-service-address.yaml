@@ -6,7 +6,7 @@ spec:
   forProvider:
     purpose: VPC_PEERING
     addressType: INTERNAL
-    address: 10.3.0.0/16
+    ipCidrRange: 10.3.0.0/16
     networkRef:
       name: crossplane-vpc
   providerConfigRef:
