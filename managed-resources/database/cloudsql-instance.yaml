@@ -7,9 +7,16 @@ spec:
     region: us-east1
     databaseVersion: POSTGRES_15
     deletionProtection: false
+
     settings:
       tier: db-f1-micro
       diskSize: 20
       diskType: PD_SSD
+
+      ipConfiguration:
+        ipv4Enabled: false
+        privateNetworkRef:
+          name: crossplane-vpc
+
   providerConfigRef:
     name: default
