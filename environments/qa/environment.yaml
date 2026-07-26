@@ -2,7 +2,9 @@ apiVersion: platform.example.org/v1alpha1
 kind: XEnvironment
 metadata:
   name: qa
-
+  labels:
+    environment: qa
+    platform.example.org/managed-by: crossplane
 spec:
   crossplane:
     compositionRef:
