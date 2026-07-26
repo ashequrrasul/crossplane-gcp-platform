@@ -5,8 +5,9 @@ metadata:
   namespace: default
 
 spec:
-  compositionRef:
-    name: gcp-environment-standard
+  crossplane:
+    compositionRef:
+      name: gcp-environment-standard
 
   projectID: project-40d105bf-bb2b-4bf6-b9f
 
