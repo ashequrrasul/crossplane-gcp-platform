@@ -51,15 +51,6 @@ spec:
                   strategy: string
                   string:
                     fmt: crossplane-%s-vpc
-                toFieldPath: spec.forProvider.name
-
-              - type: CombineFromComposite
-                combine:
-                  variables:
-                    - fromFieldPath: spec.environmentName
-                  strategy: string
-                  string:
-                    fmt: crossplane-%s-vpc
                 toFieldPath: metadata.annotations[crossplane.io/external-name]
 
           - name: subnetwork
@@ -92,16 +83,6 @@ spec:
                   string:
                     fmt: crossplane-%s-subnet-%s
                 toFieldPath: metadata.name
-
-              - type: CombineFromComposite
-                combine:
-                  variables:
-                    - fromFieldPath: spec.environmentName
-                    - fromFieldPath: spec.region
-                  strategy: string
-                  string:
-                    fmt: crossplane-%s-subnet-%s
-                toFieldPath: spec.forProvider.name
 
               - type: CombineFromComposite
                 combine:
@@ -203,15 +184,6 @@ spec:
                   strategy: string
                   string:
                     fmt: crossplane-%s-gke
-                toFieldPath: spec.forProvider.name
-
-              - type: CombineFromComposite
-                combine:
-                  variables:
-                    - fromFieldPath: spec.environmentName
-                  strategy: string
-                  string:
-                    fmt: crossplane-%s-gke
                 toFieldPath: metadata.annotations[crossplane.io/external-name]
 
               - type: FromCompositeFieldPath
@@ -301,15 +273,6 @@ spec:
                   string:
                     fmt: crossplane-%s-nodepool
                 toFieldPath: metadata.name
-
-              - type: CombineFromComposite
-                combine:
-                  variables:
-                    - fromFieldPath: spec.environmentName
-                  strategy: string
-                  string:
-                    fmt: crossplane-%s-nodepool
-                toFieldPath: spec.forProvider.name
 
               - type: CombineFromComposite
                 combine:
