@@ -1,0 +1,346 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: gcp-environment-standard
+
+spec:
+  compositeTypeRef:
+    apiVersion: platform.example.org/v1alpha1
+    kind: XEnvironment
+
+  mode: Pipeline
+
+  pipeline:
+    - step: create-environment-resources
+      functionRef:
+        name: function-patch-and-transform
+
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+
+        resources:
+          - name: network
+            base:
+              apiVersion: compute.gcp.upbound.io/v1beta2
+              kind: Network
+              metadata:
+                labels:
+                  platform.example.org/resource-type: network
+              spec:
+                forProvider:
+                  autoCreateSubnetworks: false
+                  routingMode: REGIONAL
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-vpc
+                toFieldPath: metadata.name
+
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-vpc
+                toFieldPath: spec.forProvider.name
+
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-vpc
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+          - name: subnetwork
+            base:
+              apiVersion: compute.gcp.upbound.io/v1beta2
+              kind: Subnetwork
+              metadata:
+                labels:
+                  platform.example.org/resource-type: subnetwork
+              spec:
+                forProvider:
+                  privateIpGoogleAccess: true
+                  secondaryIpRange:
+                    - rangeName: placeholder-pods-range
+                      ipCidrRange: 10.100.0.0/16
+                    - rangeName: placeholder-services-range
+                      ipCidrRange: 10.101.0.0/20
+                  networkRef:
+                    name: placeholder-network
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                    - fromFieldPath: spec.region
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-subnet-%s
+                toFieldPath: metadata.name
+
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                    - fromFieldPath: spec.region
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-subnet-%s
+                toFieldPath: spec.forProvider.name
+
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                    - fromFieldPath: spec.region
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-subnet-%s
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.region
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.subnetCidr
+                toFieldPath: spec.forProvider.ipCidrRange
+
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-vpc
+                toFieldPath: spec.forProvider.networkRef.name
+
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: "%s-pods-range"
+                toFieldPath: spec.forProvider.secondaryIpRange[0].rangeName
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.podCidr
+                toFieldPath: spec.forProvider.secondaryIpRange[0].ipCidrRange
+
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: "%s-services-range"
+                toFieldPath: spec.forProvider.secondaryIpRange[1].rangeName
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.serviceCidr
+                toFieldPath: spec.forProvider.secondaryIpRange[1].ipCidrRange
+
+          - name: cluster
+            base:
+              apiVersion: container.gcp.upbound.io/v1beta2
+              kind: Cluster
+              metadata:
+                labels:
+                  platform.example.org/resource-type: gke-cluster
+              spec:
+                forProvider:
+                  removeDefaultNodePool: true
+                  initialNodeCount: 1
+                  networkingMode: VPC_NATIVE
+                  deletionProtection: false
+
+                  networkRef:
+                    name: placeholder-network
+
+                  subnetworkRef:
+                    name: placeholder-subnetwork
+
+                  ipAllocationPolicy:
+                    clusterSecondaryRangeName: placeholder-pods-range
+                    servicesSecondaryRangeName: placeholder-services-range
+
+                  workloadIdentityConfig:
+                    workloadPool: placeholder-project.svc.id.goog
+
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-gke
+                toFieldPath: metadata.name
+
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-gke
+                toFieldPath: spec.forProvider.name
+
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-gke
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.zone
+                toFieldPath: spec.forProvider.location
+
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-vpc
+                toFieldPath: spec.forProvider.networkRef.name
+
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                    - fromFieldPath: spec.region
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-subnet-%s
+                toFieldPath: spec.forProvider.subnetworkRef.name
+
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: "%s-pods-range"
+                toFieldPath: spec.forProvider.ipAllocationPolicy.clusterSecondaryRangeName
+
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: "%s-services-range"
+                toFieldPath: spec.forProvider.ipAllocationPolicy.servicesSecondaryRangeName
+
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.projectID
+                  strategy: string
+                  string:
+                    fmt: "%s.svc.id.goog"
+                toFieldPath: spec.forProvider.workloadIdentityConfig.workloadPool
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.deletionProtection
+                toFieldPath: spec.forProvider.deletionProtection
+
+          - name: nodepool
+            base:
+              apiVersion: container.gcp.upbound.io/v1beta2
+              kind: NodePool
+              metadata:
+                labels:
+                  platform.example.org/resource-type: gke-nodepool
+              spec:
+                forProvider:
+                  location: us-east1-c
+                  clusterRef:
+                    name: placeholder-cluster
+
+                  nodeCount: 1
+
+                  nodeConfig:
+                    machineType: e2-medium
+                    diskSizeGb: 20
+                    oauthScopes:
+                      - https://www.googleapis.com/auth/cloud-platform
+
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-nodepool
+                toFieldPath: metadata.name
+
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-nodepool
+                toFieldPath: spec.forProvider.name
+
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-nodepool
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.zone
+                toFieldPath: spec.forProvider.location
+
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-gke
+                toFieldPath: spec.forProvider.clusterRef.name
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.nodeCount
+                toFieldPath: spec.forProvider.nodeCount
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.machineType
+                toFieldPath: spec.forProvider.nodeConfig.machineType
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.diskSizeGb
+                toFieldPath: spec.forProvider.nodeConfig.diskSizeGb
