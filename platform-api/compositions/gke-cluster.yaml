@@ -1,27 +1,222 @@
-apiVersion: platform.example.org/v1alpha1
-kind: GKECluster
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
 metadata:
-  name: qa-gke
-  namespace: default
+  name: gke-cluster-standard
+
+  labels:
+    provider: gcp
+    service: gke
+    platform.example.org/tier: standard
 
 spec:
-  compositionRef:
-    name: gke-cluster-standard
+  compositeTypeRef:
+    apiVersion: platform.example.org/v1alpha1
+    kind: XGKECluster
 
-  projectID: project-40d105bf-bb2b-4bf6-b9f
-  location: us-east1-c
+  mode: Pipeline
 
-  clusterName: crossplane-qa-gke
-  nodePoolName: crossplane-qa-nodepool
+  pipeline:
+    - step: create-gke-resources
+      functionRef:
+        name: function-patch-and-transform
 
-  networkName: crossplane-vpc
-  subnetworkName: crossplane-subnet-us-east1
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
 
-  podSecondaryRangeName: pods-range
-  serviceSecondaryRangeName: services-range
+        resources:
 
-  machineType: e2-medium
-  nodeCount: 1
-  diskSizeGb: 20
+          # ============================================================
+          # GKE CLUSTER
+          # ============================================================
+          - name: gke-cluster
 
-  deletionProtection: false
+            base:
+              apiVersion: container.gcp.upbound.io/v1beta2
+              kind: Cluster
+
+              metadata:
+                name: placeholder-gke-cluster
+
+                annotations:
+                  crossplane.io/external-name: placeholder-gke-cluster
+
+                labels:
+                  platform.example.org/component: gke-cluster
+
+              spec:
+                forProvider:
+                  location: us-east1-c
+
+                  deletionProtection: false
+
+                  networkRef:
+                    name: crossplane-vpc
+
+                  subnetworkRef:
+                    name: crossplane-subnet-us-east1
+
+                  removeDefaultNodePool: true
+                  initialNodeCount: 1
+
+                  networkingMode: VPC_NATIVE
+
+                  ipAllocationPolicy:
+                    clusterSecondaryRangeName: pods-range
+                    servicesSecondaryRangeName: services-range
+
+                  workloadIdentityConfig:
+                    workloadPool: placeholder-project.svc.id.goog
+
+                providerConfigRef:
+                  name: default
+
+            patches:
+
+              # Set the Kubernetes managed-resource name.
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.clusterName
+                toFieldPath: metadata.name
+
+              # Set the actual GCP cluster name.
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.clusterName
+                toFieldPath: metadata.annotations["crossplane.io/external-name"]
+
+              # Set the GCP zone.
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.location
+                toFieldPath: spec.forProvider.location
+
+              # Reference the existing Crossplane-managed VPC.
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.networkName
+                toFieldPath: spec.forProvider.networkRef.name
+
+              # Reference the existing Crossplane-managed subnet.
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.subnetworkName
+                toFieldPath: spec.forProvider.subnetworkRef.name
+
+              # Use the requested Pod secondary range.
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.podSecondaryRangeName
+                toFieldPath: spec.forProvider.ipAllocationPolicy.clusterSecondaryRangeName
+
+              # Use the requested Service secondary range.
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.serviceSecondaryRangeName
+                toFieldPath: spec.forProvider.ipAllocationPolicy.servicesSecondaryRangeName
+
+              # Control GKE deletion protection.
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.deletionProtection
+                toFieldPath: spec.forProvider.deletionProtection
+
+              # Convert:
+              # project-40d105bf-bb2b-4bf6-b9f
+              #
+              # Into:
+              # project-40d105bf-bb2b-4bf6-b9f.svc.id.goog
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.projectID
+                toFieldPath: spec.forProvider.workloadIdentityConfig.workloadPool
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: "%s.svc.id.goog"
+
+            readinessChecks:
+              - type: MatchCondition
+                matchCondition:
+                  type: Ready
+                  status: "True"
+
+
+          # ============================================================
+          # GKE NODE POOL
+          # ============================================================
+          - name: gke-nodepool
+
+            base:
+              apiVersion: container.gcp.upbound.io/v1beta2
+              kind: NodePool
+
+              metadata:
+                name: placeholder-gke-nodepool
+
+                annotations:
+                  crossplane.io/external-name: placeholder-gke-nodepool
+
+                labels:
+                  platform.example.org/component: gke-nodepool
+
+              spec:
+                forProvider:
+                  location: us-east1-c
+
+                  # This references the Kubernetes name of the Cluster
+                  # managed resource created above.
+                  clusterRef:
+                    name: placeholder-gke-cluster
+
+                  nodeCount: 1
+
+                  nodeConfig:
+                    machineType: e2-medium
+                    diskSizeGb: 20
+                    diskType: pd-standard
+
+                    oauthScopes:
+                      - https://www.googleapis.com/auth/cloud-platform
+
+                  management:
+                    autoRepair: true
+                    autoUpgrade: true
+
+                providerConfigRef:
+                  name: default
+
+            patches:
+
+              # Set the Kubernetes managed-resource name.
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.nodePoolName
+                toFieldPath: metadata.name
+
+              # Set the actual GCP node-pool name.
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.nodePoolName
+                toFieldPath: metadata.annotations["crossplane.io/external-name"]
+
+              # Use the same location as the GKE cluster.
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.location
+                toFieldPath: spec.forProvider.location
+
+              # Reference the Cluster managed-resource Kubernetes name.
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.clusterName
+                toFieldPath: spec.forProvider.clusterRef.name
+
+              # Set the worker-node machine type.
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.machineType
+                toFieldPath: spec.forProvider.nodeConfig.machineType
+
+              # Set the desired number of nodes.
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.nodeCount
+                toFieldPath: spec.forProvider.nodeCount
+
+              # Set the worker-node boot disk size.
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.diskSizeGb
+                toFieldPath: spec.forProvider.nodeConfig.diskSizeGb
+
+            readinessChecks:
+              - type: MatchCondition
+                matchCondition:
+                  type: Ready
+                  status: "True"
