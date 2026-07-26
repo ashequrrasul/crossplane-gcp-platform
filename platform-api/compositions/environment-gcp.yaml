@@ -22,7 +22,7 @@ spec:
         resources:
           - name: network
             base:
-              apiVersion: compute.gcp.upbound.io/v1beta2
+              apiVersion: compute.gcp.upbound.io/v1beta1
               kind: Network
               metadata:
                 labels:
@@ -64,7 +64,7 @@ spec:
 
           - name: subnetwork
             base:
-              apiVersion: compute.gcp.upbound.io/v1beta2
+              apiVersion: compute.gcp.upbound.io/v1beta1
               kind: Subnetwork
               metadata:
                 labels:
