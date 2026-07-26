@@ -1,0 +1,27 @@
+apiVersion: platform.example.org/v1alpha1
+kind: GKECluster
+metadata:
+  name: qa-gke
+  namespace: default
+
+spec:
+  compositionRef:
+    name: gke-cluster-standard
+
+  projectID: project-40d105bf-bb2b-4bf6-b9f
+  location: us-east1-c
+
+  clusterName: crossplane-qa-gke
+  nodePoolName: crossplane-qa-nodepool
+
+  networkName: crossplane-vpc
+  subnetworkName: crossplane-subnet-us-east1
+
+  podSecondaryRangeName: pods-range
+  serviceSecondaryRangeName: services-range
+
+  machineType: e2-medium
+  nodeCount: 1
+  diskSizeGb: 20
+
+  deletionProtection: false
