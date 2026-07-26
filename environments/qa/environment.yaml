@@ -1,0 +1,25 @@
+apiVersion: platform.example.org/v1alpha1
+kind: XEnvironment
+metadata:
+  name: qa
+  namespace: default
+
+spec:
+  compositionRef:
+    name: gcp-environment-standard
+
+  projectID: project-40d105bf-bb2b-4bf6-b9f
+
+  environmentName: qa
+  region: us-east1
+  zone: us-east1-c
+
+  subnetCidr: 10.10.1.0/24
+  podCidr: 10.11.0.0/16
+  serviceCidr: 10.12.0.0/20
+
+  machineType: e2-medium
+  nodeCount: 1
+  diskSizeGb: 20
+
+  deletionProtection: false
