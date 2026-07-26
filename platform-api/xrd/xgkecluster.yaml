@@ -1,17 +1,16 @@
-apiVersion: apiextensions.crossplane.io/v1
+apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
   name: xgkeclusters.platform.example.org
+
 spec:
+  scope: Namespaced
+
   group: platform.example.org
 
   names:
     kind: XGKECluster
     plural: xgkeclusters
-
-  claimNames:
-    kind: GKECluster
-    plural: gkeclusters
 
   versions:
     - name: v1alpha1
@@ -41,24 +40,24 @@ spec:
 
                 location:
                   type: string
-                  description: GCP zone where the GKE cluster is created
+                  description: GCP zone for the GKE cluster
                   default: us-east1-c
 
                 clusterName:
                   type: string
-                  description: Name of the GKE cluster
+                  description: External GKE cluster name
 
                 nodePoolName:
                   type: string
-                  description: Name of the GKE node pool
+                  description: External GKE node-pool name
 
                 networkName:
                   type: string
-                  description: Existing Crossplane Network managed-resource name
+                  description: Crossplane Network managed-resource name
 
                 subnetworkName:
                   type: string
-                  description: Existing Crossplane Subnetwork managed-resource name
+                  description: Crossplane Subnetwork managed-resource name
 
                 podSecondaryRangeName:
                   type: string
@@ -89,6 +88,7 @@ spec:
 
             status:
               type: object
+
               properties:
                 clusterStatus:
                   type: string
