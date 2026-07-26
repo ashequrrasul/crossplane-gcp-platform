@@ -9,7 +9,6 @@ spec:
       name: gcp-environment-standard
 
   projectID: project-40d105bf-bb2b-4bf6-b9f
-
   environmentName: qa
   region: us-east1
   zone: us-east1-c
@@ -21,5 +20,4 @@ spec:
   machineType: e2-medium
   nodeCount: 1
   diskSizeGb: 20
-
   deletionProtection: false
