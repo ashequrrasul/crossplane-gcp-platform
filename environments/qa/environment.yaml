@@ -2,7 +2,6 @@ apiVersion: platform.example.org/v1alpha1
 kind: XEnvironment
 metadata:
   name: qa
-  namespace: default
 
 spec:
   crossplane:
