@@ -1,0 +1,78 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xenvironments.platform.example.org
+
+spec:
+  scope: Namespaced
+
+  group: platform.example.org
+
+  names:
+    kind: XEnvironment
+    plural: xenvironments
+
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+
+      schema:
+        openAPIV3Schema:
+          type: object
+
+          properties:
+            spec:
+              type: object
+
+              required:
+                - projectID
+                - environmentName
+                - region
+                - zone
+                - subnetCidr
+                - podCidr
+                - serviceCidr
+
+              properties:
+                projectID:
+                  type: string
+
+                environmentName:
+                  type: string
+
+                region:
+                  type: string
+                  default: us-east1
+
+                zone:
+                  type: string
+                  default: us-east1-c
+
+                subnetCidr:
+                  type: string
+
+                podCidr:
+                  type: string
+
+                serviceCidr:
+                  type: string
+
+                machineType:
+                  type: string
+                  default: e2-medium
+
+                nodeCount:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  default: 1
+
+                diskSizeGb:
+                  type: integer
+                  minimum: 20
+                  default: 20
+
+                deletionProtection:
+                  type: boolean
+                  default: false
