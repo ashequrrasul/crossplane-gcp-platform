@@ -487,6 +487,21 @@ spec:
                   string:
                     fmt: crossplane-%s-vpc
                 toFieldPath: spec.forProvider.settings[0].ipConfiguration[0].privateNetworkRef.name
+                                # Publish the Kubernetes managed-resource name
+              - type: ToCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: status.database.instanceName
+
+              # Publish the Cloud SQL connection name
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.connectionName
+                toFieldPath: status.database.connectionName
+
+              # Publish the private database IP
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.privateIpAddress
+                toFieldPath: status.database.privateIpAddress
+
 ##############################################################################
 # DATABASE
 ##############################################################################
@@ -532,6 +547,9 @@ spec:
                   string:
                     fmt: crossplane-%s-postgres
                 toFieldPath: spec.forProvider.instanceRef.name
+              - type: ToCompositeFieldPath
+                fromFieldPath: metadata.annotations[crossplane.io/external-name]
+                toFieldPath: status.database.databaseName
 
 ##############################################################################
 # SECRET MANAGEMENT
@@ -673,7 +691,15 @@ spec:
                   string:
                     fmt: "%s-db-password"
                 toFieldPath: spec.forProvider.passwordSecretRef.name
-                
+              
+              - type: ToCompositeFieldPath
+                fromFieldPath: metadata.annotations[crossplane.io/external-name]
+                toFieldPath: status.database.username
+              
+              - type: ToCompositeFieldPath
+                fromFieldPath: spec.forProvider.passwordSecretRef.name
+                toFieldPath: status.database.passwordSecretName
+              
 ################################################################################
 # GKE Resources
 ################################################################################       
