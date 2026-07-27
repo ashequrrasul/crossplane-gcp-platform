@@ -136,6 +136,37 @@ spec:
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.serviceCidr
                 toFieldPath: spec.forProvider.secondaryIpRange[1].ipCidrRange
+          
+          - name: internal-firewall
+            base:
+              apiVersion: compute.gcp.upbound.io/v1beta2
+              kind: Firewall
+              metadata:
+                annotations:
+                  crossplane.io/external-name: placeholder-allow-internal
+              spec:
+                forProvider:
+                  direction: INGRESS
+                  allow:
+                    - protocol: tcp
+                    - protocol: udp
+                    - protocol: icmp
+                  sourceRanges:
+                    - 10.10.0.0/16
+                  networkSelector:
+                    matchControllerRef: true
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.environmentName
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: crossplane-%s-allow-internal
 
           - name: cluster
             base:
