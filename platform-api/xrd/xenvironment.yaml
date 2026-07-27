@@ -134,3 +134,21 @@ spec:
                     deletionProtection:
                       type: boolean
                       default: false
+            status:
+              type: object
+              properties:
+                database:
+                  type: object
+                  properties:
+                    instanceName:
+                      type: string
+                    connectionName:
+                      type: string
+                    privateIpAddress:
+                      type: string
+                    databaseName:
+                      type: string
+                    username:
+                      type: string
+                    passwordSecretName:
+                      type: string
