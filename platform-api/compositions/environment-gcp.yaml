@@ -532,6 +532,69 @@ spec:
                   string:
                     fmt: crossplane-%s-postgres
                 toFieldPath: spec.forProvider.instanceRef.name
+
+##############################################################################
+# SECRET MANAGEMENT
+##############################################################################
+
+          - name: database-password-secret
+            base:
+              apiVersion: secretmanager.gcp.upbound.io/v1beta2
+              kind: Secret
+
+              metadata:
+                labels:
+                  platform.example.org/resource-type: database-password-secret
+                annotations:
+                  crossplane.io/external-name: placeholder-db-password
+
+              spec:
+                forProvider:
+                  project: placeholder-project
+                  replication:
+                    auto: {}
+
+                  deletionProtection: false
+
+                  labels:
+                    managed-by: crossplane
+                    component: cloud-sql
+                    secret-type: database-password
+
+                providerConfigRef:
+                  name: default
+
+            patches:
+              # Kubernetes managed-resource name
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-db-password-secret
+                toFieldPath: metadata.name
+
+              # Actual GCP Secret Manager secret ID
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: "%s-db-password"
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              # GCP project
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.projectID
+                toFieldPath: spec.forProvider.project
+
+              # Environment label
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.environmentName
+                toFieldPath: spec.forProvider.labels.environment
+                
 ################################################################################
 # GKE Resources
 ################################################################################       
