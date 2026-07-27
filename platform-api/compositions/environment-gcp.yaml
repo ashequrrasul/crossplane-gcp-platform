@@ -18,6 +18,9 @@ spec:
       input:
         apiVersion: pt.fn.crossplane.io/v1beta1
         kind: Resources
+################################################################################
+# Network Resources
+################################################################################
 
         resources:
           - name: network
@@ -258,7 +261,85 @@ spec:
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.region
                 toFieldPath: spec.forProvider.region
-                      
+          ##############################################################################
+          # DATABASE — PRIVATE SERVICE ACCESS RANGE
+          ##############################################################################
+
+          - name: private-service-range
+            base:
+              apiVersion: compute.gcp.upbound.io/v1beta1
+              kind: GlobalAddress
+              metadata:
+                labels:
+                  platform.example.org/resource-type: private-service-range
+                annotations:
+                  crossplane.io/external-name: placeholder-private-service-range
+
+              spec:
+                forProvider:
+                  addressType: INTERNAL
+                  purpose: VPC_PEERING
+                  ipVersion: IPV4
+                  address: 10.255.0.0
+                  prefixLength: 16
+
+                  networkRef:
+                    name: placeholder-network
+
+                providerConfigRef:
+                  name: default
+
+            patches:
+              # Kubernetes managed-resource name
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-private-service-range
+                toFieldPath: metadata.name
+
+              # Actual GCP resource name
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-private-service-range
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              # GCP project
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.projectID
+                toFieldPath: spec.forProvider.project
+
+              # Reference the VPC created by this Composition
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-vpc
+                toFieldPath: spec.forProvider.networkRef.name
+
+              # Convert 10.13.0.0/16 into 10.13.0.0
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.database.privateServiceCidr
+                toFieldPath: spec.forProvider.address
+                transforms:
+                  - type: string
+                    string:
+                      type: Regexp
+                      regexp:
+                        match: '^([^/]+)/16$'
+                        group: 1
+
+################################################################################
+# GKE Resources
+################################################################################       
           - name: cluster
             base:
               apiVersion: container.gcp.upbound.io/v1beta2
