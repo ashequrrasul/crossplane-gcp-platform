@@ -487,6 +487,61 @@ spec:
                   string:
                     fmt: crossplane-%s-vpc
                 toFieldPath: spec.forProvider.settings[0].ipConfiguration[0].privateNetworkRef.name
+##############################################################################
+# DATABASE
+##############################################################################
+
+          - name: database
+            base:
+              apiVersion: sql.gcp.upbound.io/v1beta1
+              kind: Database
+
+              metadata:
+                labels:
+                  platform.example.org/resource-type: database
+
+                annotations:
+                  crossplane.io/external-name: placeholder-db
+
+              spec:
+                forProvider:
+                  instanceRef:
+                    name: placeholder-instance
+
+                providerConfigRef:
+                  name: default
+
+            patches:
+
+              # metadata.name
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-database
+                toFieldPath: metadata.name
+
+              # GCP database name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.database.name
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              # Database name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.database.name
+                toFieldPath: spec.forProvider.name
+
+              # Cloud SQL Instance reference
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-postgres
+                toFieldPath: spec.forProvider.instanceRef.name
 ################################################################################
 # GKE Resources
 ################################################################################       
