@@ -395,6 +395,107 @@ spec:
                     fmt: crossplane-%s-private-service-range
                 toFieldPath: spec.forProvider.reservedPeeringRangesRefs[0].name
 
+          ##############################################################################
+          # DATABASE — CLOUD SQL POSTGRESQL INSTANCE
+          ##############################################################################
+
+          - name: database-instance
+            base:
+              apiVersion: sql.gcp.upbound.io/v1beta1
+              kind: DatabaseInstance
+
+              metadata:
+                labels:
+                  platform.example.org/resource-type: database-instance
+                annotations:
+                  crossplane.io/external-name: placeholder-postgres
+
+              spec:
+                forProvider:
+                  databaseVersion: POSTGRES_15
+                  region: us-east1
+                  deletionProtection: false
+
+                  settings:
+                    tier: db-f1-micro
+                    availabilityType: ZONAL
+                    diskType: PD_SSD
+                    diskSize: 20
+                    diskAutoresize: true
+
+                    backupConfiguration:
+                      enabled: true
+                      pointInTimeRecoveryEnabled: true
+                      startTime: "03:00"
+
+                    ipConfiguration:
+                      ipv4Enabled: false
+                      privateNetworkRef:
+                        name: placeholder-network
+
+                    userLabels:
+                      managed-by: crossplane
+                      component: cloud-sql
+
+                providerConfigRef:
+                  name: default
+
+            patches:
+              # Kubernetes managed-resource name
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-postgres
+                toFieldPath: metadata.name
+
+              # GCP Cloud SQL instance name
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-postgres
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              # Project
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.projectID
+                toFieldPath: spec.forProvider.project
+
+              # Region
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.region
+
+              # PostgreSQL version
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.database.version
+                toFieldPath: spec.forProvider.databaseVersion
+
+              # Machine tier
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.database.tier
+                toFieldPath: spec.forProvider.settings.tier
+
+              # Deletion protection
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.database.deletionProtection
+                toFieldPath: spec.forProvider.deletionProtection
+
+              # Reference environment VPC
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-vpc
+                toFieldPath: spec.forProvider.settings.ipConfiguration.privateNetworkRef.name
+
 ################################################################################
 # GKE Resources
 ################################################################################       
