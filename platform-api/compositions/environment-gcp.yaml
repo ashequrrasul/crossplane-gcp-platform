@@ -198,6 +198,66 @@ spec:
                     string:
                       type: Format
                       fmt: crossplane-%s-allow-iap-ssh
+          
+          - name: cloud-router
+            base:
+              apiVersion: compute.gcp.upbound.io/v1beta2
+              kind: Router
+              metadata:
+                annotations:
+                  crossplane.io/external-name: placeholder-router
+              spec:
+                forProvider:
+                  region: us-east1
+                  networkSelector:
+                    matchControllerRef: true
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.environmentName
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: crossplane-%s-router
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.region
+          
+          - name: cloud-nat
+            base:
+              apiVersion: compute.gcp.upbound.io/v1beta2
+              kind: RouterNAT
+              metadata:
+                annotations:
+                  crossplane.io/external-name: placeholder-nat
+              spec:
+                forProvider:
+                  region: us-east1
+                  natIpAllocateOption: AUTO_ONLY
+                  sourceSubnetworkIpRangesToNat: ALL_SUBNETWORKS_ALL_IP_RANGES
+                  routerSelector:
+                    matchControllerRef: true
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.environmentName
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: crossplane-%s-nat
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.region
                       
           - name: cluster
             base:
