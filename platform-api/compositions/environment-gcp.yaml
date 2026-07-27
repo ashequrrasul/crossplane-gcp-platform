@@ -328,7 +328,7 @@ spec:
               
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.masterCidr
-                toFieldPath: spec.forProvider.privateClusterConfig[0].masterIpv4CidrBlock
+                toFieldPath: spec.forProvider.privateClusterConfig.masterIpv4CidrBlock
 
               - type: CombineFromComposite
                 combine:
