@@ -594,6 +594,85 @@ spec:
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.environmentName
                 toFieldPath: spec.forProvider.labels.environment
+
+##############################################################################
+# CLOUD SQL USER
+##############################################################################
+
+          - name: database-user
+            base:
+              apiVersion: sql.gcp.upbound.io/v1beta2
+              kind: User
+
+              metadata:
+                labels:
+                  platform.example.org/resource-type: cloud-sql-user
+                annotations:
+                  crossplane.io/external-name: appuser
+
+              spec:
+                forProvider:
+                  project: placeholder-project
+
+                  # Patched to the composed DatabaseInstance Kubernetes resource name.
+                  instanceRef:
+                    name: placeholder-database-instance
+
+                  passwordSecretRef:
+                    name: placeholder-db-password
+                    namespace: crossplane-system
+                    key: password
+
+                  type: BUILT_IN
+
+                providerConfigRef:
+                  name: default
+
+            patches:
+              # Kubernetes managed-resource name
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-db-user
+                toFieldPath: metadata.name
+
+              # Cloud SQL username
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: "%s-appuser"
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              # GCP project
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.projectID
+                toFieldPath: spec.forProvider.project
+
+              # Reference the composed Cloud SQL DatabaseInstance
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-postgres
+                toFieldPath: spec.forProvider.instanceRef.name
+
+              # Reference the Kubernetes Secret created by ESO
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: "%s-db-password"
+                toFieldPath: spec.forProvider.passwordSecretRef.name
                 
 ################################################################################
 # GKE Resources
