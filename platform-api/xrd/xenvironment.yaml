@@ -33,6 +33,7 @@ spec:
                 - subnetCidr
                 - podCidr
                 - serviceCidr
+                - masterCidr
 
               properties:
                 projectID:
