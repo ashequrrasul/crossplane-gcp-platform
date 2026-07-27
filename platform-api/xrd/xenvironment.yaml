@@ -152,3 +152,12 @@ spec:
                       type: string
                     passwordSecretName:
                       type: string
+                kubernetes:
+                  type: object
+                  properties:
+                    clusterName:
+                      type: string
+                    location:
+                      type: string
+                    endpoint:
+                      type: string

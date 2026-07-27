@@ -818,6 +818,20 @@ spec:
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.deletionProtection
                 toFieldPath: spec.forProvider.deletionProtection
+              # Publish cluster name
+              - type: ToCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: status.kubernetes.clusterName
+
+              # Publish cluster location
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.location
+                toFieldPath: status.kubernetes.location
+
+              # Publish API endpoint
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.endpoint
+                toFieldPath: status.kubernetes.endpoint
 
           - name: nodepool
             base:
