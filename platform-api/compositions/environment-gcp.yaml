@@ -348,8 +348,6 @@ spec:
               metadata:
                 labels:
                   platform.example.org/resource-type: service-networking
-                annotations:
-                  crossplane.io/external-name: placeholder-service-networking
 
               spec:
                 forProvider:
@@ -377,16 +375,6 @@ spec:
                     fmt: crossplane-%s-service-networking
                 toFieldPath: metadata.name
 
-              # External resource name
-              - type: CombineFromComposite
-                combine:
-                  variables:
-                    - fromFieldPath: spec.environmentName
-                  strategy: string
-                  string:
-                    fmt: crossplane-%s-service-networking
-                toFieldPath: metadata.annotations[crossplane.io/external-name]
-
               # Reference environment VPC
               - type: CombineFromComposite
                 combine:
@@ -397,7 +385,7 @@ spec:
                     fmt: crossplane-%s-vpc
                 toFieldPath: spec.forProvider.networkRef.name
 
-              # Reference the GlobalAddress created above
+              # Reference the reserved PSA range
               - type: CombineFromComposite
                 combine:
                   variables:
@@ -406,6 +394,7 @@ spec:
                   string:
                     fmt: crossplane-%s-private-service-range
                 toFieldPath: spec.forProvider.reservedPeeringRangesRefs[0].name
+
 ################################################################################
 # GKE Resources
 ################################################################################       
