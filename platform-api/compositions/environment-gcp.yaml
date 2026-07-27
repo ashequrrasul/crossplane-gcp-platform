@@ -280,9 +280,9 @@ spec:
                     name: placeholder-subnetwork
                   
                   privateClusterConfig:
-                    - enablePrivateNodes: true
-                      enablePrivateEndpoint: false
-                      masterIpv4CidrBlock: 172.16.255.0/28
+                    enablePrivateNodes: true
+                    enablePrivateEndpoint: false
+                    masterIpv4CidrBlock: 172.16.255.0/28
 
                   ipAllocationPolicy:
                     clusterSecondaryRangeName: placeholder-pods-range
