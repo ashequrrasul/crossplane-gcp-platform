@@ -417,31 +417,30 @@ spec:
                   deletionProtection: false
 
                   settings:
-                    tier: db-f1-micro
-                    availabilityType: ZONAL
-                    diskType: PD_SSD
-                    diskSize: 20
-                    diskAutoresize: true
+                    - tier: db-f1-micro
+                      availabilityType: ZONAL
+                      diskType: PD_SSD
+                      diskSize: 20
+                      diskAutoresize: true
 
-                    backupConfiguration:
-                      enabled: true
-                      pointInTimeRecoveryEnabled: true
-                      startTime: "03:00"
+                      backupConfiguration:
+                        enabled: true
+                        pointInTimeRecoveryEnabled: true
+                        startTime: "03:00"
 
-                    ipConfiguration:
-                      ipv4Enabled: false
-                      privateNetworkRef:
-                        name: placeholder-network
+                      ipConfiguration:
+                        ipv4Enabled: false
+                        privateNetworkRef:
+                          name: placeholder-network
 
-                    userLabels:
-                      managed-by: crossplane
-                      component: cloud-sql
+                      userLabels:
+                        managed-by: crossplane
+                        component: cloud-sql
 
                 providerConfigRef:
                   name: default
 
             patches:
-              # Kubernetes managed-resource name
               - type: CombineFromComposite
                 combine:
                   variables:
@@ -451,7 +450,6 @@ spec:
                     fmt: crossplane-%s-postgres
                 toFieldPath: metadata.name
 
-              # GCP Cloud SQL instance name
               - type: CombineFromComposite
                 combine:
                   variables:
@@ -461,32 +459,26 @@ spec:
                     fmt: crossplane-%s-postgres
                 toFieldPath: metadata.annotations[crossplane.io/external-name]
 
-              # Project
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.projectID
                 toFieldPath: spec.forProvider.project
 
-              # Region
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.region
                 toFieldPath: spec.forProvider.region
 
-              # PostgreSQL version
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.database.version
                 toFieldPath: spec.forProvider.databaseVersion
 
-              # Machine tier
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.database.tier
-                toFieldPath: spec.forProvider.settings.tier
+                toFieldPath: spec.forProvider.settings[0].tier
 
-              # Deletion protection
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.database.deletionProtection
                 toFieldPath: spec.forProvider.deletionProtection
 
-              # Reference environment VPC
               - type: CombineFromComposite
                 combine:
                   variables:
@@ -494,8 +486,7 @@ spec:
                   strategy: string
                   string:
                     fmt: crossplane-%s-vpc
-                toFieldPath: spec.forProvider.settings.ipConfiguration.privateNetworkRef.name
-
+                toFieldPath: spec.forProvider.settings[0].ipConfiguration.privateNetworkRef.name
 ################################################################################
 # GKE Resources
 ################################################################################       
