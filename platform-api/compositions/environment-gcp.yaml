@@ -424,14 +424,14 @@ spec:
                       diskAutoresize: true
 
                       backupConfiguration:
-                        enabled: true
-                        pointInTimeRecoveryEnabled: true
-                        startTime: "03:00"
+                        - enabled: true
+                          pointInTimeRecoveryEnabled: true
+                          startTime: "03:00"
 
                       ipConfiguration:
-                        ipv4Enabled: false
-                        privateNetworkRef:
-                          name: placeholder-network
+                        - ipv4Enabled: false
+                          privateNetworkRef:
+                            name: placeholder-network
 
                       userLabels:
                         managed-by: crossplane
@@ -486,7 +486,7 @@ spec:
                   strategy: string
                   string:
                     fmt: crossplane-%s-vpc
-                toFieldPath: spec.forProvider.settings[0].ipConfiguration.privateNetworkRef.name
+                toFieldPath: spec.forProvider.settings[0].ipConfiguration[0].privateNetworkRef.name
 ################################################################################
 # GKE Resources
 ################################################################################       
