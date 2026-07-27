@@ -50,6 +50,11 @@ spec:
                   type: string
                   default: us-east1-c
                 
+                privateEndpoint:
+                  type: boolean
+                  description: Whether the GKE control plane is accessible only through its private endpoint
+                  default: false
+                
                 masterCidr:
                   type: string
                   description: CIDR range used for the GKE private control-plane endpoint
