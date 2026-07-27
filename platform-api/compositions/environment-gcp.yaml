@@ -499,7 +499,6 @@ spec:
               metadata:
                 labels:
                   platform.example.org/resource-type: database
-
                 annotations:
                   crossplane.io/external-name: placeholder-db
 
@@ -512,8 +511,6 @@ spec:
                   name: default
 
             patches:
-
-              # metadata.name
               - type: CombineFromComposite
                 combine:
                   variables:
@@ -523,17 +520,10 @@ spec:
                     fmt: crossplane-%s-database
                 toFieldPath: metadata.name
 
-              # GCP database name
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.database.name
                 toFieldPath: metadata.annotations[crossplane.io/external-name]
 
-              # Database name
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.database.name
-                toFieldPath: spec.forProvider.name
-
-              # Cloud SQL Instance reference
               - type: CombineFromComposite
                 combine:
                   variables:
