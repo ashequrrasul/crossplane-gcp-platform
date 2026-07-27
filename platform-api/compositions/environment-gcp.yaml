@@ -282,7 +282,7 @@ spec:
                   privateClusterConfig:
                     - enablePrivateNodes: true
                       enablePrivateEndpoint: false
-                      masterIpv4CidrBlock: 172.16.0.0/28
+                      masterIpv4CidrBlock: 172.16.255.0/28
 
                   ipAllocationPolicy:
                     clusterSecondaryRangeName: placeholder-pods-range
@@ -325,6 +325,10 @@ spec:
                   string:
                     fmt: crossplane-%s-vpc
                 toFieldPath: spec.forProvider.networkRef.name
+              
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.masterCidr
+                toFieldPath: spec.forProvider.privateClusterConfig[0].masterIpv4CidrBlock
 
               - type: CombineFromComposite
                 combine:

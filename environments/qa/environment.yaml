@@ -19,6 +19,8 @@ spec:
   podCidr: 10.11.0.0/16
   serviceCidr: 10.12.0.0/20
 
+  masterCidr: 172.16.0.0/28
+
   machineType: e2-medium
   nodeCount: 1
   diskSizeGb: 20
