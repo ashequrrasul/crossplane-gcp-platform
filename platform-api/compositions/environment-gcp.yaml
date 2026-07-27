@@ -336,7 +336,76 @@ spec:
                       regexp:
                         match: '^([^/]+)/16$'
                         group: 1
+          ##############################################################################
+          # DATABASE — SERVICE NETWORKING CONNECTION
+          ##############################################################################
 
+          - name: service-networking-connection
+            base:
+              apiVersion: servicenetworking.gcp.upbound.io/v1beta1
+              kind: Connection
+
+              metadata:
+                labels:
+                  platform.example.org/resource-type: service-networking
+                annotations:
+                  crossplane.io/external-name: placeholder-service-networking
+
+              spec:
+                forProvider:
+                  networkRef:
+                    name: placeholder-network
+
+                  reservedPeeringRangesRefs:
+                    - name: placeholder-private-service-range
+
+                  service: servicenetworking.googleapis.com
+
+                  deletionPolicy: ABANDON
+
+                providerConfigRef:
+                  name: default
+
+            patches:
+              # Kubernetes managed-resource name
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-service-networking
+                toFieldPath: metadata.name
+
+              # External resource name
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-service-networking
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              # Reference environment VPC
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-vpc
+                toFieldPath: spec.forProvider.networkRef.name
+
+              # Reference the GlobalAddress created above
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-private-service-range
+                toFieldPath: spec.forProvider.reservedPeeringRangesRefs[0].name
 ################################################################################
 # GKE Resources
 ################################################################################       
