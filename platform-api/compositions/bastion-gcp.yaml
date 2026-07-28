@@ -1,0 +1,204 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: gcp-bastion-standard
+spec:
+  compositeTypeRef:
+    apiVersion: platform.example.org/v1alpha1
+    kind: XBastion
+
+  mode: Pipeline
+
+  pipeline:
+    - step: create-bastion-resources
+      functionRef:
+        name: function-patch-and-transform
+
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+
+        resources:
+          - name: iap-ssh-firewall
+            base:
+              apiVersion: compute.gcp.upbound.io/v1beta2
+              kind: Firewall
+              metadata:
+                labels:
+                  platform.example.org/resource-type: iap-ssh-firewall
+                annotations:
+                  crossplane.io/external-name: placeholder-allow-iap-ssh
+              spec:
+                forProvider:
+                  direction: INGRESS
+                  sourceRanges:
+                    - 35.235.240.0/20
+                  allow:
+                    - protocol: tcp
+                      ports:
+                        - "22"
+                  networkRef:
+                    name: placeholder-network
+                  targetTags:
+                    - bastion
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-allow-iap-ssh
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.name
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-allow-iap-ssh
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.projectID
+                toFieldPath: spec.forProvider.project
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.networkName
+                toFieldPath: spec.forProvider.networkRef.name
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.iapSourceCidr
+                toFieldPath: spec.forProvider.sourceRanges[0]
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.sshPort
+                toFieldPath: spec.forProvider.allow[0].ports[0]
+                transforms:
+                  - type: convert
+                    convert:
+                      toType: string
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.providerConfigRef
+                toFieldPath: spec.providerConfigRef.name
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: metadata.annotations[crossplane.io/external-name]
+                toFieldPath: status.firewallRuleName
+
+          - name: bastion-vm
+            base:
+              apiVersion: compute.gcp.upbound.io/v1beta2
+              kind: Instance
+              metadata:
+                labels:
+                  component: bastion
+                  managed-by: crossplane
+              spec:
+                forProvider:
+                  zone: us-east1-c
+                  machineType: e2-micro
+                  bootDisk:
+                    initializeParams:
+                      image: projects/debian-cloud/global/images/family/debian-12
+                      size: 20
+                      type: pd-balanced
+                  networkInterface:
+                    network: placeholder-network
+                    subnetwork: placeholder-subnetwork
+                  metadata:
+                    enable-oslogin: "TRUE"
+                    block-project-ssh-keys: "TRUE"
+                  tags:
+                    - bastion
+                  serviceAccount:
+                    scopes:
+                      - https://www.googleapis.com/auth/cloud-platform
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-bastion
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.name
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-bastion
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.projectID
+                toFieldPath: spec.forProvider.project
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.zone
+                toFieldPath: spec.forProvider.zone
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.machineType
+                toFieldPath: spec.forProvider.machineType
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.bootDiskSizeGb
+                toFieldPath: spec.forProvider.bootDisk.initializeParams.size
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.bootDiskType
+                toFieldPath: spec.forProvider.bootDisk.initializeParams.type
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.image
+                toFieldPath: spec.forProvider.bootDisk.initializeParams.image
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.networkName
+                toFieldPath: spec.forProvider.networkInterface.network
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.subnetName
+                toFieldPath: spec.forProvider.networkInterface.subnetwork
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.networkTags
+                toFieldPath: spec.forProvider.tags
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.serviceAccountEmail
+                toFieldPath: spec.forProvider.serviceAccount.email
+                policy:
+                  fromFieldPath: Optional
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.providerConfigRef
+                toFieldPath: spec.providerConfigRef.name
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: metadata.annotations[crossplane.io/external-name]
+                toFieldPath: status.instanceName
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.networkInterface[0].networkIp
+                toFieldPath: status.internalIpAddress
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.networkInterface[0].accessConfig[0].natIp
+                toFieldPath: status.externalIpAddress
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: spec.forProvider.serviceAccount.email
+                toFieldPath: status.serviceAccountEmail

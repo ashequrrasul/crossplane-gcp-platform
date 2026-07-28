@@ -1,0 +1,372 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: gcp-vpc-standard
+spec:
+  compositeTypeRef:
+    apiVersion: platform.example.org/v1alpha1
+    kind: XVPC
+
+  mode: Pipeline
+
+  pipeline:
+    - step: create-vpc-resources
+      functionRef:
+        name: function-patch-and-transform
+
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+
+        resources:
+          - name: network
+            base:
+              apiVersion: compute.gcp.upbound.io/v1beta1
+              kind: Network
+              metadata:
+                labels:
+                  platform.example.org/resource-type: network
+              spec:
+                forProvider:
+                  autoCreateSubnetworks: false
+                  routingMode: REGIONAL
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-vpc
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.name
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-vpc
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.projectID
+                toFieldPath: spec.forProvider.project
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.routingMode
+                toFieldPath: spec.forProvider.routingMode
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.providerConfigRef
+                toFieldPath: spec.providerConfigRef.name
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: metadata.annotations[crossplane.io/external-name]
+                toFieldPath: status.networkName
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.selfLink
+                toFieldPath: status.networkSelfLink
+
+          - name: subnetwork
+            base:
+              apiVersion: compute.gcp.upbound.io/v1beta1
+              kind: Subnetwork
+              metadata:
+                labels:
+                  platform.example.org/resource-type: subnetwork
+              spec:
+                forProvider:
+                  privateIpGoogleAccess: true
+                  secondaryIpRange:
+                    - rangeName: placeholder-pods-range
+                      ipCidrRange: 10.100.0.0/16
+                    - rangeName: placeholder-services-range
+                      ipCidrRange: 10.101.0.0/20
+                  networkRef:
+                    name: placeholder-network
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-subnet-%s
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                    - fromFieldPath: spec.region
+                toFieldPath: metadata.name
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-subnet-%s
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                    - fromFieldPath: spec.region
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.projectID
+                toFieldPath: spec.forProvider.project
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.region
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.subnetCidr
+                toFieldPath: spec.forProvider.ipCidrRange
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.privateIpGoogleAccess
+                toFieldPath: spec.forProvider.privateIpGoogleAccess
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-vpc
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: spec.forProvider.networkRef.name
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: "%s-pods-range"
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: spec.forProvider.secondaryIpRange[0].rangeName
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.podCidr
+                toFieldPath: spec.forProvider.secondaryIpRange[0].ipCidrRange
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: "%s-services-range"
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: spec.forProvider.secondaryIpRange[1].rangeName
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.serviceCidr
+                toFieldPath: spec.forProvider.secondaryIpRange[1].ipCidrRange
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.providerConfigRef
+                toFieldPath: spec.providerConfigRef.name
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: metadata.annotations[crossplane.io/external-name]
+                toFieldPath: status.subnetName
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.selfLink
+                toFieldPath: status.subnetSelfLink
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: spec.forProvider.secondaryIpRange[0].rangeName
+                toFieldPath: status.podRangeName
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: spec.forProvider.secondaryIpRange[1].rangeName
+                toFieldPath: status.serviceRangeName
+
+          - name: internal-firewall
+            base:
+              apiVersion: compute.gcp.upbound.io/v1beta2
+              kind: Firewall
+              metadata:
+                labels:
+                  platform.example.org/resource-type: internal-firewall
+                annotations:
+                  crossplane.io/external-name: placeholder-allow-internal
+              spec:
+                forProvider:
+                  direction: INGRESS
+                  allow:
+                    - protocol: tcp
+                    - protocol: udp
+                    - protocol: icmp
+                  sourceRanges:
+                    - 10.0.0.0/8
+                  networkRef:
+                    name: placeholder-network
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-allow-internal
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.name
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-allow-internal
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.projectID
+                toFieldPath: spec.forProvider.project
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.internalSourceCidr
+                toFieldPath: spec.forProvider.sourceRanges[0]
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-vpc
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: spec.forProvider.networkRef.name
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.providerConfigRef
+                toFieldPath: spec.providerConfigRef.name
+
+          - name: cloud-router
+            base:
+              apiVersion: compute.gcp.upbound.io/v1beta2
+              kind: Router
+              metadata:
+                labels:
+                  platform.example.org/resource-type: cloud-router
+                annotations:
+                  crossplane.io/external-name: placeholder-router
+              spec:
+                forProvider:
+                  region: us-east1
+                  networkRef:
+                    name: placeholder-network
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-router
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.name
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-router
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.projectID
+                toFieldPath: spec.forProvider.project
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.region
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-vpc
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: spec.forProvider.networkRef.name
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.providerConfigRef
+                toFieldPath: spec.providerConfigRef.name
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: metadata.annotations[crossplane.io/external-name]
+                toFieldPath: status.routerName
+
+          - name: cloud-nat
+            base:
+              apiVersion: compute.gcp.upbound.io/v1beta2
+              kind: RouterNAT
+              metadata:
+                labels:
+                  platform.example.org/resource-type: cloud-nat
+                annotations:
+                  crossplane.io/external-name: placeholder-nat
+              spec:
+                forProvider:
+                  region: us-east1
+                  natIpAllocateOption: AUTO_ONLY
+                  sourceSubnetworkIpRangesToNat: ALL_SUBNETWORKS_ALL_IP_RANGES
+                  routerRef:
+                    name: placeholder-router
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-nat
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.name
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-nat
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.projectID
+                toFieldPath: spec.forProvider.project
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.region
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-router
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: spec.forProvider.routerRef.name
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.providerConfigRef
+                toFieldPath: spec.providerConfigRef.name
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: metadata.annotations[crossplane.io/external-name]
+                toFieldPath: status.natName

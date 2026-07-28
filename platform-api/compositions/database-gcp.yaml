@@ -1,0 +1,359 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: gcp-database-standard
+spec:
+  compositeTypeRef:
+    apiVersion: platform.example.org/v1alpha1
+    kind: XDatabase
+
+  mode: Pipeline
+
+  pipeline:
+    - step: create-database-resources
+      functionRef:
+        name: function-patch-and-transform
+
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+
+        resources:
+          - name: private-service-range
+            base:
+              apiVersion: compute.gcp.upbound.io/v1beta1
+              kind: GlobalAddress
+              metadata:
+                labels:
+                  platform.example.org/resource-type: private-service-range
+                annotations:
+                  crossplane.io/external-name: placeholder-private-service-range
+              spec:
+                forProvider:
+                  addressType: INTERNAL
+                  purpose: VPC_PEERING
+                  ipVersion: IPV4
+                  address: 10.255.0.0
+                  prefixLength: 16
+                  networkRef:
+                    name: placeholder-network
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-private-service-range
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.name
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-private-service-range
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.projectID
+                toFieldPath: spec.forProvider.project
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.networkName
+                toFieldPath: spec.forProvider.networkRef.name
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.privateServiceCidr
+                toFieldPath: spec.forProvider.address
+                transforms:
+                  - type: string
+                    string:
+                      type: Regexp
+                      regexp:
+                        match: '^([^/]+)/16$'
+                        group: 1
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.providerConfigRef
+                toFieldPath: spec.providerConfigRef.name
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: metadata.annotations[crossplane.io/external-name]
+                toFieldPath: status.psaRangeName
+
+          - name: service-networking-connection
+            base:
+              apiVersion: servicenetworking.gcp.upbound.io/v1beta1
+              kind: Connection
+              metadata:
+                labels:
+                  platform.example.org/resource-type: service-networking
+              spec:
+                deletionPolicy: Delete
+                forProvider:
+                  networkRef:
+                    name: placeholder-network
+                  reservedPeeringRangesRefs:
+                    - name: placeholder-private-service-range
+                  service: servicenetworking.googleapis.com
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-service-networking
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.name
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.networkName
+                toFieldPath: spec.forProvider.networkRef.name
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-private-service-range
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: spec.forProvider.reservedPeeringRangesRefs[0].name
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.providerConfigRef
+                toFieldPath: spec.providerConfigRef.name
+
+          - name: database-instance
+            base:
+              apiVersion: sql.gcp.upbound.io/v1beta1
+              kind: DatabaseInstance
+              metadata:
+                labels:
+                  platform.example.org/resource-type: database-instance
+                annotations:
+                  crossplane.io/external-name: placeholder-postgres
+              spec:
+                forProvider:
+                  databaseVersion: POSTGRES_15
+                  region: us-east1
+                  deletionProtection: false
+                  settings:
+                    - tier: db-f1-micro
+                      availabilityType: ZONAL
+                      diskType: PD_SSD
+                      diskSize: 20
+                      diskAutoresize: true
+                      backupConfiguration:
+                        - enabled: true
+                          pointInTimeRecoveryEnabled: true
+                          startTime: "03:00"
+                      ipConfiguration:
+                        - ipv4Enabled: false
+                          privateNetworkRef:
+                            name: placeholder-network
+                      userLabels:
+                        managed-by: crossplane
+                        component: cloud-sql
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-postgres
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.name
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-postgres
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.projectID
+                toFieldPath: spec.forProvider.project
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.region
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.version
+                toFieldPath: spec.forProvider.databaseVersion
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.tier
+                toFieldPath: spec.forProvider.settings[0].tier
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.availabilityType
+                toFieldPath: spec.forProvider.settings[0].availabilityType
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.diskSizeGb
+                toFieldPath: spec.forProvider.settings[0].diskSize
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.diskAutoresize
+                toFieldPath: spec.forProvider.settings[0].diskAutoresize
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.backupEnabled
+                toFieldPath: spec.forProvider.settings[0].backupConfiguration[0].enabled
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.deletionProtection
+                toFieldPath: spec.forProvider.deletionProtection
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.networkName
+                toFieldPath: spec.forProvider.settings[0].ipConfiguration[0].privateNetworkRef.name
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.providerConfigRef
+                toFieldPath: spec.providerConfigRef.name
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: metadata.annotations[crossplane.io/external-name]
+                toFieldPath: status.instanceName
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.connectionName
+                toFieldPath: status.connectionName
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.privateIpAddress
+                toFieldPath: status.privateIpAddress
+
+          - name: database
+            base:
+              apiVersion: sql.gcp.upbound.io/v1beta1
+              kind: Database
+              metadata:
+                labels:
+                  platform.example.org/resource-type: database
+                annotations:
+                  crossplane.io/external-name: placeholder-db
+              spec:
+                forProvider:
+                  instanceRef:
+                    name: placeholder-instance
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-database
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.name
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.name
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-postgres
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: spec.forProvider.instanceRef.name
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.providerConfigRef
+                toFieldPath: spec.providerConfigRef.name
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: metadata.annotations[crossplane.io/external-name]
+                toFieldPath: status.databaseName
+
+          - name: database-user
+            base:
+              apiVersion: sql.gcp.upbound.io/v1beta2
+              kind: User
+              metadata:
+                labels:
+                  platform.example.org/resource-type: cloud-sql-user
+                annotations:
+                  crossplane.io/external-name: appuser
+              spec:
+                forProvider:
+                  project: placeholder-project
+                  instanceRef:
+                    name: placeholder-database-instance
+                  passwordSecretRef:
+                    name: placeholder-db-password
+                    namespace: default
+                    key: password
+                  type: BUILT_IN
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-db-user
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.name
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.user
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.projectID
+                toFieldPath: spec.forProvider.project
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-postgres
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: spec.forProvider.instanceRef.name
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.passwordSecretName
+                toFieldPath: spec.forProvider.passwordSecretRef.name
+                policy:
+                  fromFieldPath: Required
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.passwordSecretNamespace
+                toFieldPath: spec.forProvider.passwordSecretRef.namespace
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.providerConfigRef
+                toFieldPath: spec.providerConfigRef.name
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: metadata.annotations[crossplane.io/external-name]
+                toFieldPath: status.username
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: spec.forProvider.passwordSecretRef.name
+                toFieldPath: status.passwordSecretName

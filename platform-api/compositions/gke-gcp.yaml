@@ -1,0 +1,227 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: gcp-gke-standard
+spec:
+  compositeTypeRef:
+    apiVersion: platform.example.org/v1alpha1
+    kind: XGKE
+
+  mode: Pipeline
+
+  pipeline:
+    - step: create-gke-resources
+      functionRef:
+        name: function-patch-and-transform
+
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+
+        resources:
+          - name: cluster
+            base:
+              apiVersion: container.gcp.upbound.io/v1beta2
+              kind: Cluster
+              metadata:
+                labels:
+                  platform.example.org/resource-type: gke-cluster
+              spec:
+                forProvider:
+                  location: us-east1-c
+                  removeDefaultNodePool: true
+                  initialNodeCount: 1
+                  networkingMode: VPC_NATIVE
+                  deletionProtection: false
+                  networkRef:
+                    name: placeholder-network
+                  subnetworkRef:
+                    name: placeholder-subnetwork
+                  privateClusterConfig:
+                    enablePrivateNodes: true
+                    enablePrivateEndpoint: false
+                    masterIpv4CidrBlock: 172.16.255.0/28
+                  ipAllocationPolicy:
+                    clusterSecondaryRangeName: placeholder-pods-range
+                    servicesSecondaryRangeName: placeholder-services-range
+                  workloadIdentityConfig:
+                    workloadPool: placeholder-project.svc.id.goog
+                  releaseChannel:
+                    channel: REGULAR
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-gke
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.name
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-gke
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.projectID
+                toFieldPath: spec.forProvider.project
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.zone
+                toFieldPath: spec.forProvider.location
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.networkName
+                toFieldPath: spec.forProvider.networkRef.name
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.subnetName
+                toFieldPath: spec.forProvider.subnetworkRef.name
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.podRangeName
+                toFieldPath: spec.forProvider.ipAllocationPolicy.clusterSecondaryRangeName
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.serviceRangeName
+                toFieldPath: spec.forProvider.ipAllocationPolicy.servicesSecondaryRangeName
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.masterCidr
+                toFieldPath: spec.forProvider.privateClusterConfig.masterIpv4CidrBlock
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.privateEndpoint
+                toFieldPath: spec.forProvider.privateClusterConfig.enablePrivateEndpoint
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: "%s.svc.id.goog"
+                  variables:
+                    - fromFieldPath: spec.projectID
+                toFieldPath: spec.forProvider.workloadIdentityConfig.workloadPool
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.releaseChannel
+                toFieldPath: spec.forProvider.releaseChannel.channel
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.deletionProtection
+                toFieldPath: spec.forProvider.deletionProtection
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.providerConfigRef
+                toFieldPath: spec.providerConfigRef.name
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: metadata.annotations[crossplane.io/external-name]
+                toFieldPath: status.clusterName
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.location
+                toFieldPath: status.location
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.endpoint
+                toFieldPath: status.endpoint
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.masterAuth.clusterCaCertificate
+                toFieldPath: status.clusterCaCertificate
+
+          - name: nodepool
+            base:
+              apiVersion: container.gcp.upbound.io/v1beta2
+              kind: NodePool
+              metadata:
+                labels:
+                  platform.example.org/resource-type: gke-nodepool
+              spec:
+                forProvider:
+                  location: us-east1-c
+                  clusterRef:
+                    name: placeholder-cluster
+                  nodeCount: 1
+                  nodeConfig:
+                    machineType: e2-medium
+                    diskSizeGb: 20
+                    diskType: pd-standard
+                    imageType: COS_CONTAINERD
+                    oauthScopes:
+                      - https://www.googleapis.com/auth/cloud-platform
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-nodepool
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.name
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-nodepool
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.projectID
+                toFieldPath: spec.forProvider.project
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.zone
+                toFieldPath: spec.forProvider.location
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-gke
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: spec.forProvider.clusterRef.name
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.nodeCount
+                toFieldPath: spec.forProvider.nodeCount
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.machineType
+                toFieldPath: spec.forProvider.nodeConfig.machineType
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.diskSizeGb
+                toFieldPath: spec.forProvider.nodeConfig.diskSizeGb
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.diskType
+                toFieldPath: spec.forProvider.nodeConfig.diskType
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.imageType
+                toFieldPath: spec.forProvider.nodeConfig.imageType
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.providerConfigRef
+                toFieldPath: spec.providerConfigRef.name
+
+              - type: ToCompositeFieldPath
+                fromFieldPath: metadata.annotations[crossplane.io/external-name]
+                toFieldPath: status.nodePoolName

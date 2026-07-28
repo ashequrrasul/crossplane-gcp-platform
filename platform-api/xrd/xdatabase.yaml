@@ -1,0 +1,158 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xdatabases.platform.example.org
+spec:
+  scope: Cluster
+
+  group: platform.example.org
+
+  names:
+    kind: XDatabase
+    plural: xdatabases
+
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+
+      additionalPrinterColumns:
+        - name: Environment
+          type: string
+          jsonPath: .spec.environmentName
+        - name: Region
+          type: string
+          jsonPath: .spec.region
+        - name: Instance
+          type: string
+          jsonPath: .status.instanceName
+        - name: Ready
+          type: string
+          jsonPath: .status.conditions[?(@.type=='Ready')].status
+
+      schema:
+        openAPIV3Schema:
+          type: object
+
+          properties:
+            spec:
+              type: object
+
+              required:
+                - projectID
+                - environmentName
+                - region
+                - networkName
+                - privateServiceCidr
+                - version
+                - tier
+                - name
+                - user
+
+              properties:
+                projectID:
+                  type: string
+                  minLength: 1
+
+                environmentName:
+                  type: string
+                  minLength: 1
+
+                region:
+                  type: string
+                  default: us-east1
+
+                networkName:
+                  type: string
+                  minLength: 1
+                  description: Existing VPC name created by XVPC
+
+                privateServiceCidr:
+                  type: string
+                  description: /16 CIDR reserved for Private Service Access
+                  pattern: '^([0-9]{1,3}\.){3}[0-9]{1,3}/16$'
+
+                version:
+                  type: string
+                  default: POSTGRES_15
+                  enum:
+                    - POSTGRES_15
+                    - POSTGRES_16
+                    - POSTGRES_17
+
+                tier:
+                  type: string
+                  default: db-f1-micro
+
+                name:
+                  type: string
+                  default: appdb
+                  description: Application database name
+
+                user:
+                  type: string
+                  default: appuser
+                  description: Application database username
+
+                availabilityType:
+                  type: string
+                  default: ZONAL
+                  enum:
+                    - ZONAL
+                    - REGIONAL
+
+                diskSizeGb:
+                  type: integer
+                  minimum: 10
+                  default: 20
+
+                diskAutoresize:
+                  type: boolean
+                  default: true
+
+                backupEnabled:
+                  type: boolean
+                  default: true
+
+                deletionProtection:
+                  type: boolean
+                  default: false
+
+                passwordSecretNamespace:
+                  type: string
+                  default: default
+                  description: Namespace where the generated connection secret is written
+
+                passwordSecretName:
+                  type: string
+                  minLength: 1
+                  description: Name of the generated database credential secret
+
+                providerConfigRef:
+                  type: string
+                  default: default
+
+            status:
+              type: object
+
+              properties:
+                instanceName:
+                  type: string
+
+                connectionName:
+                  type: string
+
+                privateIpAddress:
+                  type: string
+
+                databaseName:
+                  type: string
+
+                username:
+                  type: string
+
+                passwordSecretName:
+                  type: string
+
+                psaRangeName:
+                  type: string

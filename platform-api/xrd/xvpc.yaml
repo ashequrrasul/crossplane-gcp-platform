@@ -1,0 +1,132 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xvpcs.platform.example.org
+spec:
+  scope: Cluster
+
+  group: platform.example.org
+
+  names:
+    kind: XVPC
+    plural: xvpcs
+
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+
+      additionalPrinterColumns:
+        - name: Environment
+          type: string
+          jsonPath: .spec.environmentName
+        - name: Region
+          type: string
+          jsonPath: .spec.region
+        - name: Network
+          type: string
+          jsonPath: .status.networkName
+        - name: Ready
+          type: string
+          jsonPath: .status.conditions[?(@.type=='Ready')].status
+
+      schema:
+        openAPIV3Schema:
+          type: object
+
+          properties:
+            spec:
+              type: object
+
+              required:
+                - projectID
+                - environmentName
+                - region
+                - subnetCidr
+                - podCidr
+                - serviceCidr
+
+              properties:
+                projectID:
+                  type: string
+                  minLength: 1
+                  description: GCP project that owns the networking resources
+
+                environmentName:
+                  type: string
+                  minLength: 1
+                  description: Environment identifier used for naming and labels
+
+                region:
+                  type: string
+                  default: us-east1
+                  description: GCP region for the subnet, router, and Cloud NAT
+
+                routingMode:
+                  type: string
+                  default: REGIONAL
+                  enum:
+                    - REGIONAL
+                    - GLOBAL
+
+                subnetCidr:
+                  type: string
+                  description: Primary subnet CIDR
+                  pattern: '^([0-9]{1,3}\.){3}[0-9]{1,3}/[0-9]{1,2}$'
+
+                podCidr:
+                  type: string
+                  description: Secondary CIDR used by GKE Pods
+                  pattern: '^([0-9]{1,3}\.){3}[0-9]{1,3}/[0-9]{1,2}$'
+
+                serviceCidr:
+                  type: string
+                  description: Secondary CIDR used by Kubernetes Services
+                  pattern: '^([0-9]{1,3}\.){3}[0-9]{1,3}/[0-9]{1,2}$'
+
+                internalSourceCidr:
+                  type: string
+                  default: 10.0.0.0/8
+                  description: Source CIDR allowed by the internal firewall rule
+                  pattern: '^([0-9]{1,3}\.){3}[0-9]{1,3}/[0-9]{1,2}$'
+
+                privateIpGoogleAccess:
+                  type: boolean
+                  default: true
+
+                enableCloudNAT:
+                  type: boolean
+                  default: true
+
+                providerConfigRef:
+                  type: string
+                  default: default
+                  description: Name of the GCP ProviderConfig
+
+            status:
+              type: object
+
+              properties:
+                networkName:
+                  type: string
+
+                networkSelfLink:
+                  type: string
+
+                subnetName:
+                  type: string
+
+                subnetSelfLink:
+                  type: string
+
+                podRangeName:
+                  type: string
+
+                serviceRangeName:
+                  type: string
+
+                routerName:
+                  type: string
+
+                natName:
+                  type: string

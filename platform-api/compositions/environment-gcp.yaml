@@ -262,6 +262,81 @@ spec:
                 fromFieldPath: spec.region
                 toFieldPath: spec.forProvider.region
           ##############################################################################
+          #  Baston Host
+          ##############################################################################
+          - name: bastion-vm
+            base:
+              apiVersion: compute.gcp.upbound.io/v1beta2
+              kind: Instance
+              metadata:
+                labels:
+                  component: bastion
+                  managed-by: crossplane
+              spec:
+                forProvider:
+                  zone: us-east1-c
+                  machineType: e2-micro
+
+                  bootDisk:
+                    initializeParams:
+                      image: debian-cloud/debian-12
+                      size: 10
+                      type: pd-balanced
+
+                  networkInterface:
+                    network: placeholder
+                    subnetwork: placeholder
+
+                  metadata:
+                    enable-oslogin: "TRUE"
+                    block-project-ssh-keys: "TRUE"
+
+                  tags:
+                    - bastion
+
+                  serviceAccount:
+                    scopes:
+                      - https://www.googleapis.com/auth/cloud-platform
+
+                providerConfigRef:
+                  name: default
+
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.zone
+                toFieldPath: spec.forProvider.zone
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.bastion.machineType
+                toFieldPath: spec.forProvider.machineType
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-vpc
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: spec.forProvider.networkInterface.network
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-subnet-us-east1
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: spec.forProvider.networkInterface.subnetwork
+
+              - type: CombineFromComposite
+                combine:
+                  strategy: string
+                  string:
+                    fmt: crossplane-%s-bastion
+                  variables:
+                    - fromFieldPath: spec.environmentName
+                toFieldPath: metadata.name
+          ##############################################################################
           # DATABASE — PRIVATE SERVICE ACCESS RANGE
           ##############################################################################
 

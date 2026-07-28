@@ -1,0 +1,171 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xgkes.platform.example.org
+spec:
+  scope: Cluster
+
+  group: platform.example.org
+
+  names:
+    kind: XGKE
+    plural: xgkes
+
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+
+      additionalPrinterColumns:
+        - name: Environment
+          type: string
+          jsonPath: .spec.environmentName
+        - name: Location
+          type: string
+          jsonPath: .spec.zone
+        - name: Cluster
+          type: string
+          jsonPath: .status.clusterName
+        - name: Ready
+          type: string
+          jsonPath: .status.conditions[?(@.type=='Ready')].status
+
+      schema:
+        openAPIV3Schema:
+          type: object
+
+          properties:
+            spec:
+              type: object
+
+              required:
+                - projectID
+                - environmentName
+                - region
+                - zone
+                - networkName
+                - subnetName
+                - podRangeName
+                - serviceRangeName
+                - masterCidr
+
+              properties:
+                projectID:
+                  type: string
+                  minLength: 1
+
+                environmentName:
+                  type: string
+                  minLength: 1
+
+                region:
+                  type: string
+                  default: us-east1
+
+                zone:
+                  type: string
+                  default: us-east1-c
+
+                networkName:
+                  type: string
+                  minLength: 1
+                  description: Existing VPC name created by XVPC
+
+                subnetName:
+                  type: string
+                  minLength: 1
+                  description: Existing subnet name created by XVPC
+
+                podRangeName:
+                  type: string
+                  minLength: 1
+                  description: Existing Pod secondary range name created by XVPC
+
+                serviceRangeName:
+                  type: string
+                  minLength: 1
+                  description: Existing Service secondary range name created by XVPC
+
+                privateEndpoint:
+                  type: boolean
+                  default: false
+                  description: Whether the GKE control plane uses only its private endpoint
+
+                masterCidr:
+                  type: string
+                  description: /28 CIDR used for the private GKE control plane
+                  pattern: '^([0-9]{1,3}\.){3}[0-9]{1,3}/28$'
+
+                machineType:
+                  type: string
+                  default: e2-medium
+
+                nodeCount:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  default: 1
+
+                minNodeCount:
+                  type: integer
+                  minimum: 0
+                  default: 1
+
+                maxNodeCount:
+                  type: integer
+                  minimum: 1
+                  default: 3
+
+                diskSizeGb:
+                  type: integer
+                  minimum: 20
+                  default: 20
+
+                diskType:
+                  type: string
+                  default: pd-standard
+                  enum:
+                    - pd-standard
+                    - pd-balanced
+                    - pd-ssd
+
+                imageType:
+                  type: string
+                  default: COS_CONTAINERD
+
+                releaseChannel:
+                  type: string
+                  default: REGULAR
+                  enum:
+                    - RAPID
+                    - REGULAR
+                    - STABLE
+                    - UNSPECIFIED
+
+                deletionProtection:
+                  type: boolean
+                  default: false
+
+                providerConfigRef:
+                  type: string
+                  default: default
+
+            status:
+              type: object
+
+              properties:
+                clusterName:
+                  type: string
+
+                location:
+                  type: string
+
+                endpoint:
+                  type: string
+
+                nodePoolName:
+                  type: string
+
+                clusterCaCertificate:
+                  type: string
+                  writeOnly: true

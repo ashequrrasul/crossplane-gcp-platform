@@ -134,6 +134,15 @@ spec:
                     deletionProtection:
                       type: boolean
                       default: false
+                bastion:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                      default: true
+                    machineType:
+                      type: string
+                      default: e2-micro
             status:
               type: object
               properties:

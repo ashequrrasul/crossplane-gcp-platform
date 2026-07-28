@@ -1,0 +1,151 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xbastions.platform.example.org
+spec:
+  scope: Cluster
+
+  group: platform.example.org
+
+  names:
+    kind: XBastion
+    plural: xbastions
+
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+
+      additionalPrinterColumns:
+        - name: Environment
+          type: string
+          jsonPath: .spec.environmentName
+        - name: Zone
+          type: string
+          jsonPath: .spec.zone
+        - name: Instance
+          type: string
+          jsonPath: .status.instanceName
+        - name: Ready
+          type: string
+          jsonPath: .status.conditions[?(@.type=='Ready')].status
+
+      schema:
+        openAPIV3Schema:
+          type: object
+
+          properties:
+            spec:
+              type: object
+
+              required:
+                - projectID
+                - environmentName
+                - region
+                - zone
+                - networkName
+                - subnetName
+
+              properties:
+                projectID:
+                  type: string
+                  minLength: 1
+
+                environmentName:
+                  type: string
+                  minLength: 1
+
+                region:
+                  type: string
+                  default: us-east1
+
+                zone:
+                  type: string
+                  default: us-east1-c
+
+                networkName:
+                  type: string
+                  minLength: 1
+                  description: Existing VPC name created by XVPC
+
+                subnetName:
+                  type: string
+                  minLength: 1
+                  description: Existing subnet name created by XVPC
+
+                machineType:
+                  type: string
+                  default: e2-micro
+
+                bootDiskSizeGb:
+                  type: integer
+                  minimum: 10
+                  default: 20
+
+                bootDiskType:
+                  type: string
+                  default: pd-balanced
+                  enum:
+                    - pd-standard
+                    - pd-balanced
+                    - pd-ssd
+
+                image:
+                  type: string
+                  default: projects/debian-cloud/global/images/family/debian-12
+
+                useIAP:
+                  type: boolean
+                  default: true
+                  description: Create an ingress firewall rule for Google IAP TCP forwarding
+
+                iapSourceCidr:
+                  type: string
+                  default: 35.235.240.0/20
+                  description: Google IAP TCP forwarding source CIDR
+                  pattern: '^([0-9]{1,3}\.){3}[0-9]{1,3}/[0-9]{1,2}$'
+
+                sshPort:
+                  type: integer
+                  minimum: 1
+                  maximum: 65535
+                  default: 22
+
+                assignPublicIp:
+                  type: boolean
+                  default: false
+                  description: Whether the bastion receives an external IP address
+
+                serviceAccountEmail:
+                  type: string
+                  description: Optional existing GCP service account attached to the VM
+
+                networkTags:
+                  type: array
+                  items:
+                    type: string
+                  default:
+                    - bastion
+
+                providerConfigRef:
+                  type: string
+                  default: default
+
+            status:
+              type: object
+
+              properties:
+                instanceName:
+                  type: string
+
+                internalIpAddress:
+                  type: string
+
+                externalIpAddress:
+                  type: string
+
+                serviceAccountEmail:
+                  type: string
+
+                firewallRuleName:
+                  type: string

@@ -1,0 +1,16 @@
+apiVersion: platform.example.org/v1alpha1
+kind: XVPC
+metadata:
+  name: dev
+spec:
+  projectID: project-40d105bf-bb2b-4bf6-b9f
+
+  environmentName: dev
+
+  region: us-east1
+
+  subnetCidr: 10.10.1.0/24
+
+  podCidr: 10.11.0.0/16
+
+  serviceCidr: 10.12.0.0/20
