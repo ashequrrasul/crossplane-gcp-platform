@@ -33,5 +33,3 @@ spec:
 
   providerConfigRef: default
 
-  compositionRef:
-    name: gcp-gke-standard
