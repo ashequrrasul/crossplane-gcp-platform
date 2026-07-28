@@ -109,8 +109,8 @@ spec:
                       size: 20
                       type: pd-balanced
                   networkInterface:
-                    network: placeholder-network
-                    subnetwork: placeholder-subnetwork
+                    - network: ""
+                      subnetwork: ""
                   metadata:
                     enable-oslogin: "TRUE"
                     block-project-ssh-keys: "TRUE"
@@ -167,11 +167,11 @@ spec:
 
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.networkName
-                toFieldPath: spec.forProvider.networkInterface.network
+                toFieldPath: spec.forProvider.networkInterface[0].network
 
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.subnetName
-                toFieldPath: spec.forProvider.networkInterface.subnetwork
+                toFieldPath: spec.forProvider.networkInterface[0].subnetwork
 
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.networkTags
