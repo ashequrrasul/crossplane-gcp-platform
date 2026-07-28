@@ -1,0 +1,37 @@
+apiVersion: platform.example.org/v1alpha1
+kind: XGKE
+metadata:
+  name: dev-gke
+spec:
+  projectID: project-40d105bf-bb2b-4bf6-b9f
+  environmentName: dev
+
+  region: us-east1
+  zone: us-east1-c
+
+  # Existing resources created by XVPC
+  networkName: crossplane-dev-vpc
+  subnetName: crossplane-dev-subnet-us-east1
+  podRangeName: dev-pods-range
+  serviceRangeName: dev-services-range
+
+  # Private GKE nodes
+  privateEndpoint: false
+  masterCidr: 172.16.0.0/28
+
+  # Node pool
+  machineType: e2-medium
+  nodeCount: 1
+  minNodeCount: 1
+  maxNodeCount: 3
+  diskSizeGb: 20
+  diskType: pd-balanced
+  imageType: COS_CONTAINERD
+
+  releaseChannel: REGULAR
+  deletionProtection: false
+
+  providerConfigRef: default
+
+  compositionRef:
+    name: gcp-gke-standard
