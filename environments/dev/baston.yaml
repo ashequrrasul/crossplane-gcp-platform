@@ -1,0 +1,28 @@
+apiVersion: platform.example.org/v1alpha1
+kind: XBastion
+metadata:
+  name: dev-bastion
+spec:
+  projectID: project-40d105bf-bb2b-4bf6-b9f
+  environmentName: dev
+
+  region: us-east1
+  zone: us-east1-c
+
+  networkName: crossplane-dev-vpc
+  subnetName: crossplane-dev-subnet-us-east1
+
+  machineType: e2-micro
+  bootDiskSizeGb: 20
+  bootDiskType: pd-balanced
+  image: projects/debian-cloud/global/images/family/debian-12
+
+  useIAP: true
+  iapSourceCidr: 35.235.240.0/20
+  sshPort: 22
+  assignPublicIp: false
+
+  networkTags:
+    - bastion
+
+  providerConfigRef: default
